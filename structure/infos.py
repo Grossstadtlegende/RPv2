@@ -17,3 +17,4 @@ class Treatment():
             for i in implemented[kind]:
                 label += i+str(getattr(self, i))+' '
         return label
+

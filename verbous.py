@@ -4,7 +4,10 @@ from datetime import datetime
 
 
 def ERROR(txt, errorcount=0):
-    print 'ERROR:\t '+ txt
+    print '%s ERROR:\t '%datetime.now()+ txt
+
+def WARNING(txt, errorcount=0):
+    print '%s WARNING:\t '%datetime.now()+ txt
 
 def ADD(txt):
     print '%s ADDING\t '%datetime.now() +txt
@@ -20,3 +23,6 @@ def RUNTIME():
 
 def IMPORTING(txt=''):
     print '%s IMPORTING %sFILE\t '%(datetime.now(), txt)
+
+def INFO(txt=''):
+    print '%s INFO %s\t '%(datetime.now(), txt)
