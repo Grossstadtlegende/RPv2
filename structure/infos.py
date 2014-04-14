@@ -10,7 +10,8 @@ class Treatment():
         self.__dict__.update(treatment)
         verbous.NEW('Treatment')
     def get_label(self, kind='P'):
-        implemented = {'P':['P', 'P_max']}
+        implemented = {'P':['P', 'P_max'],
+                       'AF':['AF']}
 
         label = ''
         if kind in implemented:

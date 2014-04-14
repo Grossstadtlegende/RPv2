@@ -84,12 +84,7 @@ class Measurement():
                 for k in self._raw_data:
                     self._raw_data[k] = [self._raw_data[k][i] for i in idx]
         self.__dict__.update(self._raw_data)
-        steps = ['th', 'pt', 'ck', 'ac', 'tr']
 
-        for step in steps:
-            steps_list = self.steplist[step]
-            idx = [i for i in range(len(self._raw_data['run'][0])) if self._raw_data['run'][0][i] in steps_list[:, 0]]
-            
     def get_attrib(self):
         print self.__dict__.keys()
 
@@ -129,14 +124,28 @@ class PInt(Measurement):
         Measurement.__init__(self, file, treatment, machine, sample)
         verbous.NEW('|- Paleointensity')
 
+    def calc_ptrm(self):
+        self.ptrm = [[self.th[i][0], self.th[i][0]-self.pt[i][0], self.th[i][1]-self.pt[i][1], self.th[i][1]-self.pt[i][1]]
+                     for i in range(len(self.th)) for j in range(len(self.pt)) if self.th[i][0] == self.pt[j][0]]
+        # print self.th
+        # print self.ptrm
+
     def import_pint_data(self):
         verbous.IMPORTING('PalInt ')
         self.import_data()
+        steps = ['th', 'pt', 'ck', 'ac', 'tr']
 
-class PaleoInt(Measurement):
-    '''
-    OLD VERSION
-    '''
+        for step in steps:
+            steps_list = self.steplist[step]
+            run_idx = [i for i in range(len(self._raw_data['run'][0])) if
+                       self._raw_data['run'][0][i] in steps_list[:, 0]]
+            af_idx = [i for i in range(len(self._raw_data['par1'][0])) if
+                      self._raw_data['par1'][0][i] == self.treatment.AF]
+            idx = sorted(list(set(run_idx) & set(af_idx)))
+            data = [[self.steplist[step][idx.index(i),1], self._raw_data['x'][0][i], self._raw_data['y'][0][i], self._raw_data['z'][0][i]] for i in idx]
+            self.__dict__.update({step:data})
+        print(self.steplist)
+        self.calc_ptrm()
 
     def _getvalue(self, step, **kwargs):
         step = step.lower()
@@ -155,6 +164,14 @@ class PaleoInt(Measurement):
                 quantities[q] /= max(quantities[q])
 
         return quantities
+
+
+class PaleoInt(Measurement):
+    '''
+    OLD VERSION
+    '''
+
+
 
     def __get_max(self, step, quantity):
         data = self._getvalue(step)[quantity]

@@ -14,5 +14,5 @@ samples = ['DDC2-01x', 'DDC2-02x', 'DDC2-03x', 'DDC2-04x', 'DDC2-05x', 'DDC2-06x
 for sample in samples[:1]:
     E = exp.TreatmentPint(sample=sample, parameters={'test':'test'})
     E.add_measurement(file=file, treatment={'AF':0}, machine='SushiBar', steplist=steplist)
-
+    print E.measurements[0].th
 verbous.RUNTIME()

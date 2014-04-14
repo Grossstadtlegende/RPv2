@@ -18,6 +18,10 @@ def SushiBar(file):
     }
     reader_object = csv.reader(open(file, 'rU'), delimiter='\t')
     aux = [i for i in reader_object][1:]
+    for i in range(len(aux)):
+        for j in range(len(aux[i])):
+            if aux[i][j] == 'None':
+                aux[i][j] = 0
 
     out = {column.lower(): np.array([header[column][1](i[header[column][0]]) for i in aux]) for column in header}
     return out
