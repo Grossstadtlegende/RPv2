@@ -3,6 +3,7 @@ import datetime
 import numpy as np
 import datetime
 import csv
+import datetime
 def SushiBar(file):
     header = {
         'sample': [0, str], 'site': [1, str], 'type': [2, str], 'run': [3, int], 'time': [4, str],
@@ -24,8 +25,14 @@ def SushiBar(file):
                 aux[i][j] = 0
 
     out = {column.lower(): np.array([header[column][1](i[header[column][0]]) for i in aux]) for column in header}
-    return out
+    #todo time
 
+    # for i in out['time']:
+    #     print
+    #     print i[:19]
+    #     print datetime.datetime.strptime(i[:19], "%Y-%M-%d %H:%M:%S:")
+
+    return out
 
 def CryoNL(file):
     header = {

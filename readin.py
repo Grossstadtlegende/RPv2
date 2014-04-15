@@ -5,8 +5,10 @@ import verbous
 
 def steplist(file):
     header = [int, int, str]
-    reader_object = csv.reader(open(file, 'rU'), delimiter=',')
+    reader_object = csv.reader(open(file, 'rU'), delimiter='\t')
     out = [i for i in reader_object][1:]
+    for i in out:
+        print i
     run = [int(i[0]) for i in out]
     temp = [int(i[1]) for i in out]
     step = [i[2].lower() for i in out]

@@ -26,3 +26,6 @@ def IMPORTING(txt=''):
 
 def INFO(txt=''):
     print '%s INFO %s\t '%(datetime.now(), txt)
+
+def PLOTTING(txt=''):
+    print '%s PLOTTING %s\t '%(datetime.now(), txt)

@@ -19,6 +19,8 @@ class Experiment():
         self.__errcounter = 0
         self.__dict__.update(parameters)
         self.measurements = []
+        self.treatments = []
+
         self.differences = []
         self.derivatives = []
 
@@ -215,3 +217,8 @@ class TreatmentPint(Experiment):
         measurement = measurements.PInt(file, treatment, machine, sample=self.sample, steplist=self.steplist)
         measurement.import_pint_data()
         self.measurements.append(measurement)
+        self.treatments.append(measurement)
+
+    def plot(self, *args, **kwargs):
+        for i in self.treatments:
+            print i

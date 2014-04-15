@@ -74,6 +74,7 @@ class Measurement():
         verbous.IMPORTING()
         implemented = {'sushibar': machines.SushiBar,
                        'cryonl': machines.CryoNL}
+        sample = self.sample
         self._raw_data = implemented[self.machine](self.file)
         imported_samples = list(sorted(set(self._raw_data['sample'])))
         if self.sample not in imported_samples:
@@ -84,7 +85,7 @@ class Measurement():
                 for k in self._raw_data:
                     self._raw_data[k] = [self._raw_data[k][i] for i in idx]
         self.__dict__.update(self._raw_data)
-
+        self.sample = sample
     def get_attrib(self):
         print self.__dict__.keys()
 
@@ -119,65 +120,6 @@ class AFdemag(Measurement):
 
 
 class PInt(Measurement):
-    def __init__(self, file, treatment, machine, sample=None, *args, **kwargs):
-        self.steplist = kwargs.get('steplist')
-        Measurement.__init__(self, file, treatment, machine, sample)
-        verbous.NEW('|- Paleointensity')
-
-    def calc_ptrm(self):
-        self.ptrm = [[self.th[i][0], self.th[i][0]-self.pt[i][0], self.th[i][1]-self.pt[i][1], self.th[i][1]-self.pt[i][1]]
-                     for i in range(len(self.th)) for j in range(len(self.pt)) if self.th[i][0] == self.pt[j][0]]
-        # print self.th
-        # print self.ptrm
-
-    def import_pint_data(self):
-        verbous.IMPORTING('PalInt ')
-        self.import_data()
-        steps = ['th', 'pt', 'ck', 'ac', 'tr']
-
-        for step in steps:
-            steps_list = self.steplist[step]
-            run_idx = [i for i in range(len(self._raw_data['run'][0])) if
-                       self._raw_data['run'][0][i] in steps_list[:, 0]]
-            af_idx = [i for i in range(len(self._raw_data['par1'][0])) if
-                      self._raw_data['par1'][0][i] == self.treatment.AF]
-            idx = sorted(list(set(run_idx) & set(af_idx)))
-            data = [[self.steplist[step][idx.index(i),1], self._raw_data['x'][0][i], self._raw_data['y'][0][i], self._raw_data['z'][0][i]] for i in idx]
-            self.__dict__.update({step:data})
-        print(self.steplist)
-        self.calc_ptrm()
-
-    def _getvalue(self, step, **kwargs):
-        step = step.lower()
-
-        quantities = {'temp': getattr(self, step)[:, 0],
-                      'X': getattr(self, step)[:, 1],
-                      'Y': np.array(getattr(self, step)[:, 2], dtype=np.ndarray),
-                      'Z': np.array(getattr(self, step)[:, 3], dtype=np.ndarray),
-                      'sM': np.array(getattr(self, step)[:, 4], dtype=np.ndarray),
-                      'time': np.array(getattr(self, step)[:, 5], dtype=np.ndarray),
-                      'M': self.__get_M(step=step),
-                      'D': self.__get_D(step=step),
-                      'I': self.__get_I(step=step)}
-        if 'norm' in kwargs:
-            for q in ['X', 'Y', 'Z', 'M']:
-                quantities[q] /= max(quantities[q])
-
-        return quantities
-
-
-class PaleoInt(Measurement):
-    '''
-    OLD VERSION
-    '''
-
-
-
-    def __get_max(self, step, quantity):
-        data = self._getvalue(step)[quantity]
-        OUT = max([abs(i) for i in data])
-        return OUT
-
     def __get_M(self, step='th'):
         implemented = {'th': self.th,
                        'pt': self.pt,
@@ -199,8 +141,8 @@ class PaleoInt(Measurement):
         """
         from math import degrees
 
-        if step not in ['th', 'pt', 'ptrm', 'ac', 'ck', 'tr']:
-            print 'No such step: %s' % step
+        if step not in ['th', 'pt', 'ptrm', 'ac', 'ck', 'tr', 'sum']:
+            verbous.WARNING('%s not found' % step)
             return
 
         implemented = {'th': self.th,
@@ -253,3 +195,110 @@ class PaleoInt(Measurement):
         I = np.array(I)
 
         return I
+
+    def __init__(self, file, treatment, machine, sample=None, *args, **kwargs):
+        self.steplist = kwargs.get('steplist')
+        Measurement.__init__(self, file, treatment, machine, sample)
+        self.ptrm = None
+        self.sum = None
+        verbous.NEW('|- Paleointensity')
+
+    def calc_ptrm(self):
+        self.ptrm = [[self.th[i][0],
+                      self.th[i][1] - self.pt[i][1], self.th[i][2] - self.pt[i][2], self.th[i][3] - self.pt[i][3]]
+                     for i in range(len(self.th)) for j in range(len(self.pt)) if self.th[i][0] == self.pt[j][0]]
+        self.ptrm = np.array(self.ptrm)
+
+    def calc_sum(self):
+        if not self.ptrm == None:
+            self.calc_ptrm()
+        self.sum = [[self.th[i][0],
+                     self.th[i][1] + abs(self.ptrm[i][1]), self.th[i][2] + abs(self.ptrm[i][2]), self.th[i][3] + abs(self.ptrm[i][3])]
+                    for i in range(len(self.th)) for j in range(len(self.ptrm)) if self.th[i][0] == self.ptrm[j][0]]
+        self.sum = np.array(self.sum)
+
+    def import_pint_data(self):
+        verbous.IMPORTING('PalInt ')
+        self.import_data()
+        steps = ['th', 'pt', 'ck', 'ac', 'tr']
+
+        for step in steps:
+            steps_list = self.steplist[step]
+            run_idx = [i for i in range(len(self._raw_data['run'][0])) if
+                       self._raw_data['run'][0][i] in steps_list[:, 0]]
+            af_idx = [i for i in range(len(self._raw_data['par1'][0])) if
+                      self._raw_data['par1'][0][i] == self.treatment.AF]
+            idx = sorted(list(set(run_idx) & set(af_idx)))
+            print step
+            print self._raw_data['run']
+            print self.steplist[step][:,0], len(self.steplist[step][:,0])
+            print run_idx
+            print af_idx
+            A = list(self._raw_data['run'][0])
+            B = list(self.steplist[step][:,0])
+            print sorted(list(set(A) & set(B))), len(sorted(list(set(A) & set(B))))
+            print sorted(idx), len(idx)
+            data = [[self.steplist[step][idx.index(i), 1],
+                     self._raw_data['x'][0][i], self._raw_data['y'][0][i], self._raw_data['z'][0][i]]
+                # self._raw_data['sm'][0][i], self._raw_data['time'][0][i]]
+                for i in idx]
+            # except IndexError:
+            #     print(len(steps_list), len(self._raw_data['x'][0]))
+            #     print(run_idx)
+            #     print(af_idx)
+            #     print idx
+            self.__dict__.update({step: np.array(data)})
+
+        self.pt = np.vstack((self.th[0], self.pt))
+        self.calc_ptrm()
+        self.calc_sum()
+
+    def _getvalue(self, step, **kwargs):
+        step = step.lower()
+        norm = kwargs.get('norm')
+        quantities = {'temp': getattr(self, step)[:, 0],
+                      'x': getattr(self, step)[:, 1],
+                      'y': np.array(getattr(self, step)[:, 2], dtype=np.ndarray),
+                      'z': np.array(getattr(self, step)[:, 3], dtype=np.ndarray),
+                      # 'sm': np.array(getattr(self, step)[:, 4], dtype=np.ndarray),
+                      # 'time': np.array(getattr(self, step)[:, 5], dtype=np.ndarray),
+                      'm': self.__get_M(step=step),
+                      'd': self.__get_D(step=step),
+                      'i': self.__get_I(step=step)}
+        if norm:
+            for q in ['x', 'y', 'z', 'm']:
+                quantities[q] /= max(quantities[q])
+
+        return quantities
+
+    def plot(self, method='dunlop', quantity='m', *args, **kwargs):
+
+        # implemented = {'dunlop': self.plot.dunlop}
+
+        # def dunlop(self, quantity='m', *args, **kwargs):
+        verbous.PLOTTING('dunlop plot << %s >>' %self.sample)
+
+        if method == 'dunlop':
+            for step in ['th', 'ptrm', 'sum']:
+                x = self._getvalue(step, norm=False)['temp']
+                y = self._getvalue(step, norm=False)[quantity]
+                plot = plt.plot(x, y)
+        if method == 'arai':
+            x = self._getvalue('ptrm', norm=False)[quantity]
+            y = self._getvalue('th', norm=False)[quantity]
+            plot = plt.plot(x, y, 'o')
+        if 'plt' in kwargs:
+            plt.show()
+            # implemented[method](quantity, args, kwargs)
+
+
+class PaleoInt(Measurement):
+    '''
+    OLD VERSION
+    '''
+
+
+    def __get_max(self, step, quantity):
+        data = self._getvalue(step)[quantity]
+        OUT = max([abs(i) for i in data])
+        return OUT
