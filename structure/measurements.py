@@ -86,6 +86,7 @@ class Measurement():
                     self._raw_data[k] = [self._raw_data[k][i] for i in idx]
         self.__dict__.update(self._raw_data)
         self.sample = sample
+
     def get_attrib(self):
         print self.__dict__.keys()
 
@@ -213,7 +214,8 @@ class PInt(Measurement):
         if not self.ptrm == None:
             self.calc_ptrm()
         self.sum = [[self.th[i][0],
-                     self.th[i][1] + abs(self.ptrm[i][1]), self.th[i][2] + abs(self.ptrm[i][2]), self.th[i][3] + abs(self.ptrm[i][3])]
+                     self.th[i][1] + abs(self.ptrm[i][1]), self.th[i][2] + abs(self.ptrm[i][2]),
+                     self.th[i][3] + abs(self.ptrm[i][3])]
                     for i in range(len(self.th)) for j in range(len(self.ptrm)) if self.th[i][0] == self.ptrm[j][0]]
         self.sum = np.array(self.sum)
 
@@ -224,29 +226,24 @@ class PInt(Measurement):
 
         for step in steps:
             steps_list = self.steplist[step]
+
+            # search for index of rawdata with run_nr = run_nr from list
             run_idx = [i for i in range(len(self._raw_data['run'][0])) if
-                       self._raw_data['run'][0][i] in steps_list[:, 0]]
+                       self._raw_data['run'][0][i] in steps_list[:,0]]
+
+            # search for index of rawdata with af_treatment = specified
             af_idx = [i for i in range(len(self._raw_data['par1'][0])) if
-                      self._raw_data['par1'][0][i] == self.treatment.AF]
+                      self._raw_data['par1'][0][
+                          i] == self.treatment.AF]
+
+            # idx contained in both
             idx = sorted(list(set(run_idx) & set(af_idx)))
-            print step
-            print self._raw_data['run']
-            print self.steplist[step][:,0], len(self.steplist[step][:,0])
-            print run_idx
-            print af_idx
+
             A = list(self._raw_data['run'][0])
-            B = list(self.steplist[step][:,0])
-            print sorted(list(set(A) & set(B))), len(sorted(list(set(A) & set(B))))
-            print sorted(idx), len(idx)
+            B = list(self.steplist[step][:, 0])
+
             data = [[self.steplist[step][idx.index(i), 1],
-                     self._raw_data['x'][0][i], self._raw_data['y'][0][i], self._raw_data['z'][0][i]]
-                # self._raw_data['sm'][0][i], self._raw_data['time'][0][i]]
-                for i in idx]
-            # except IndexError:
-            #     print(len(steps_list), len(self._raw_data['x'][0]))
-            #     print(run_idx)
-            #     print(af_idx)
-            #     print idx
+                     self._raw_data['x'][0][i], self._raw_data['y'][0][i], self._raw_data['z'][0][i]] for i in idx]
             self.__dict__.update({step: np.array(data)})
 
         self.pt = np.vstack((self.th[0], self.pt))
@@ -276,7 +273,7 @@ class PInt(Measurement):
         # implemented = {'dunlop': self.plot.dunlop}
 
         # def dunlop(self, quantity='m', *args, **kwargs):
-        verbous.PLOTTING('dunlop plot << %s >>' %self.sample)
+        verbous.PLOTTING('dunlop plot << %s >>' % self.sample)
 
         if method == 'dunlop':
             for step in ['th', 'ptrm', 'sum']:
