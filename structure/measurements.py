@@ -219,7 +219,7 @@ class PInt(Measurement):
                     for i in range(len(self.th)) for j in range(len(self.ptrm)) if self.th[i][0] == self.ptrm[j][0]]
         self.sum = np.array(self.sum)
 
-    def import_pint_data(self):
+    def import_pint_data(self, *args, **kwargs):
         verbous.IMPORTING('PalInt ')
         self.import_data()
         steps = ['th', 'pt', 'ck', 'ac', 'tr']
@@ -236,12 +236,19 @@ class PInt(Measurement):
                       self._raw_data['par1'][0][
                           i] == self.treatment.AF]
 
+            #todo figure out why it is wrong!
             # idx contained in both
             idx = sorted(list(set(run_idx) & set(af_idx)))
+            if len(self.steplist[step]) != len(idx):
+                runs_idx = [self.steplist[step][idx.index(i),0] for i in idx]
+                runs_difference = list(set(self.steplist[step][:,0]).difference(set(runs_idx)))
+                for i in range(len(runs_difference)):
+                    verbous.WARNING('step << %s %s >> number problem with runs << %s >>' %(self.steplist[], step.upper(), runs_difference[i]) )
 
             A = list(self._raw_data['run'][0])
             B = list(self.steplist[step][:, 0])
-
+            # print step
+            # print(self.steplist[step])
             data = [[self.steplist[step][idx.index(i), 1],
                      self._raw_data['x'][0][i], self._raw_data['y'][0][i], self._raw_data['z'][0][i]] for i in idx]
             self.__dict__.update({step: np.array(data)})

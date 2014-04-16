@@ -11,8 +11,7 @@ samples = ['DDC2-01x', 'DDC2-02x', 'DDC2-03x', 'DDC2-04x', 'DDC2-05x', 'DDC2-06x
            'DDC2-30', 'DDC2-31', 'DDC2-32', 'DDC2-33', 'DDC2-34', 'DDC2-35', 'DDC2-36', 'DDC2-37', 'DDC2-38', 'DDC2-39',
            'DDC2-40']
 
-for sample in samples[18:19]:
-    print(sample)
+for sample in samples[17:18]:
     E = exp.TreatmentPint(sample=sample, parameters={'test':'test'})
     E.add_measurement(file=file, treatment={'AF':0}, machine='SushiBar', steplist=steplist)
     E.add_measurement(file=file, treatment={'AF':5}, machine='SushiBar', steplist=steplist)
