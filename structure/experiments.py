@@ -53,6 +53,29 @@ class Experiment():
         else:
             return self.measurements[0]
 
+    def plot(self, *args, **kwargs):
+        pass
+
+class Paleointensity(Experiment):
+    '''
+    A class for single paleointensity measurements
+    '''
+    def __init__(self):
+        super(Paleointensity, self).__init__()
+
+    def stats(self):
+        pass
+
+    def plot(self):
+        super(Paleointensity, self).plot()
+
+    def fit(self):
+        pass
+
+
+##################
+# TREATMENT vs.
+##################
 
 class TreatmentAF(Experiment):
     def add_measurement(self, file, treatment=None, sample=None):
@@ -222,3 +245,4 @@ class TreatmentPint(Experiment):
     def plot(self, *args, **kwargs):
         for i in self.treatments:
             print i
+
