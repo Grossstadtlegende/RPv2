@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import math as math
 import scipy.special as sp
 import distributions
+from RockPy import fitting
 
 def skewed(x, y, *args, **kwargs):
     popt, pcov = curve_fit(distributions.skewed, x, y, p0=(1. / np.std(y), np.argmax(y), 0, 0, 1))
