@@ -30,7 +30,7 @@ def test_P_demag():
     A.contour_treatment2(mode='differences')
     A.data_vs_treatment()
     A.make_pdf(x='field', y='m', differences={'P':0})
-    A.contour_treatment()
+    A.contour_treatment(mode='differences')
     plt.show()
 
 test_P_demag()

@@ -242,8 +242,8 @@ class PInt(Measurement):
             if len(self.steplist[step]) != len(idx):
                 runs_idx = [self.steplist[step][idx.index(i),0] for i in idx]
                 runs_difference = list(set(self.steplist[step][:,0]).difference(set(runs_idx)))
-                for i in range(len(runs_difference)):
-                    verbous.WARNING('step << %s %s >> number problem with runs << %s >>' %(self.steplist[], step.upper(), runs_difference[i]) )
+                # for i in range(len(runs_difference)):
+                    # verbous.WARNING('step << %s %s >> number problem with runs << %s >>' %(self.steplist[], step.upper(), runs_difference[i]) )
 
             A = list(self._raw_data['run'][0])
             B = list(self.steplist[step][:, 0])
