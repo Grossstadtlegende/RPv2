@@ -1,16 +1,14 @@
-import verbous
+from RPv2 import verbous
 import experiments, measurements, infos, data
 import time
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from mpltools import style
 import scipy.interpolate
 import matplotlib.mlab as ml
-import machines
-import readin
+from RPv2 import machines
+from RPv2 import readin
 
-style.use('ggplot')
 
 
 class Experiment():
@@ -56,10 +54,12 @@ class Experiment():
     def plot(self, *args, **kwargs):
         pass
 
+
 class Paleointensity(Experiment):
     '''
     A class for single paleointensity measurements
     '''
+
     def __init__(self):
         super(Paleointensity, self).__init__()
 
@@ -79,6 +79,12 @@ class Paleointensity(Experiment):
 
 class TreatmentAF(Experiment):
     def add_measurement(self, file, treatment=None, sample=None):
+        verbous.ADD('Measurement')
+        measurement = measurements.AFdemag(file, treatment, machine='sushibar', sample=sample)
+        measurement.import_af_data()
+        self.measurements.append(measurement)
+
+    def add_normaliation_measuremet(self, file, treatment=None, sample=None):
         verbous.ADD('Measurement')
         measurement = measurements.AFdemag(file, treatment, machine='sushibar', sample=sample)
         measurement.import_af_data()
@@ -200,7 +206,7 @@ class TreatmentAF(Experiment):
             ax2.plot(X, Y,
                      linestyle='-',
                      # color='#111111',
-                     label='d' + m.treatment.get_label(),
+                     # label='d' + m.treatment.get_label(),
             )
 
         ax2.set_xlabel(x)

@@ -4,6 +4,9 @@ import numpy as np
 import datetime
 import csv
 import datetime
+from RPv2 import verbous
+from pprint import pprint
+
 def SushiBar(file):
     header = {
         'sample': [0, str], 'site': [1, str], 'type': [2, str], 'run': [3, int], 'time': [4, str],
@@ -46,3 +49,69 @@ def CryoNL(file):
     }
     out = {column.lower(): readin.get_data(file, header, column, header_skip=2) for column in header}
     return out
+
+def readMicroMagHeader( lines):
+    sectionstart = False
+    sectiontitle = None
+    sectioncount = 0
+    header = {}
+    # section header: CAPITALS, no spaces
+    lc = 0
+    for l in lines:
+        lc += 1
+        sl = l.strip() # take away any leading and trailing whitespaces
+        if lc == 1 and not sl.startswith( "MicroMag 2900/3900 Data File"): # check first line
+            print( "No valid MicroMag file. Header not found in first line.")
+            return None
+
+        if len( sl) == 0: # empty line
+            sectionstart = True
+            continue # go to next line
+        if sectionstart: # previous line was empty
+            sectionstart = False
+            if sl.isupper():  # we have a capitalized section header
+                verbous.INFO( 'reading header section %s' % sl)
+                sectiontitle = sl
+                header[ sectiontitle] = {} # make new dictionary to gather data fields
+                sectioncount += 1
+                continue # go to next line
+            else: # no captitalized section header after empty line -> we are probably at the end of the header
+                verbous.INFO( 'reading header finished at line %d' % lc)
+                break # end of header
+        if sectiontitle != None: # we are within a section
+            # split key value at fixed character position
+            key = sl[:31].strip()
+            value = sl[31:].strip( ' "')
+            if len( key) != 0:
+                header[ sectiontitle][ key] = value
+    header['meta'] = {}
+    header['meta'][ 'numberoflines'] = lc -1# store header length
+    header['meta'][ 'numberofsections'] = sectioncount
+    return header
+
+def vsm(file):
+    file = open(file, 'rU')
+    reader_object = file.readlines()
+    header = readMicroMagHeader(reader_object) #get header
+    out = [i for i in reader_object][header['meta'][ 'numberoflines']:] #without header
+
+    aux = []
+    out_data = []
+    linecount = 0
+    for i in out:
+        if len(i) != 1:
+            if i.strip() != '':
+                d = i.strip('\n').split(',')
+                try:
+                    d = [float(i) for i in d]
+                    aux.append(d)
+                except:
+                    verbous.INFO('%s' %d)
+                    pass
+        else:
+            out_data.append(aux)
+            aux=[]
+    segments = np.array(out_data[0])
+    out_data = np.array(out_data[1:])
+    return segments, out_data
+

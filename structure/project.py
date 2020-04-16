@@ -1,7 +1,7 @@
 __author__ = 'Mike'
-import verbous
+from RPv2 import verbous
 import numpy as np
-import experiments
+import experiments, measurements
 
 
 class Project():
@@ -69,10 +69,52 @@ class Sample():
     def __init__(self, name, mass=1):
         self.name = name
         self.mass = mass
-        self.experiments = []
+        self.experiments = None
+        self.measurements = []
+        self.treatments = None
+        self.composition = None
 
     def add_experiment(self, variety=None):
         implemented = {'TreatmentPint': experiments.TreatmentPint,
                        'TreatmentAF': experiments.TreatmentAF}
         exp = implemented[variety]()
         self.experiments.append(exp)
+
+    def add_measurement(self, variety=None):
+        implemented = {'irm':measurements.IRM}
+
+        if variety.lower() in implemented:
+            m = implemented[variety.lower()]()
+            self.measurements.append(m)
+
+    def add_composition(self, composition, mixture, mill_protocol, mill_time):
+        self.composition = composition
+        self.ni = int(composition[-3:])
+        self.fe = 100 - self.ni
+        self.mixture = mixture
+        self.mill_protocol = mill_protocol
+        self.mill_time = int(mill_time)
+        verbous.ADD('<< %s >> Composition: Fe%iNi%i %s %s %i' %(self.name, self.fe, self.ni, self.mixture, self.mill_protocol, self.mill_time))
+    def __str__(self):
+        out = verbous.INFO('<< Sample >> %s %.1f' %(self.name, self.mass), out=True)
+        return out
+
+    def infos(self):
+        verbous.line()
+        verbous.INFO('SAMPLE \t %s' %self.name)
+        verbous.line()
+        print '\t Mass: \t\t\t %.1f' %self.mass
+        if self.composition != None:
+            print '\t Composition: \t Fe%iNi%i' %(self.fe, self.ni)
+            print '\t Mixture: \t\t %s' %(self.mixture)
+            print '\t Mill Protocoll: %s' %(self.mill_protocol)
+            print '\t Mill time: \t %s' %(self.mill_time)
+        if self.experiments:
+            for i in experiments:
+                verbous.line()
+                i.info()
+        if self.measurements:
+            for i in measurements:
+                verbous.line()
+                i.info()
+        print

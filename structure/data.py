@@ -1,5 +1,5 @@
 import experiments, measurements, infos, data
-import machines
+from RPv2 import machines
 
 class Data():
     def __init__(self):

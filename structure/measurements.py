@@ -1,16 +1,17 @@
 # coding=utf-8
 __author__ = 'Mike'
 
-import verbous
+from RPv2 import verbous
 import experiments, measurements, infos, data
-import machines
+from RPv2 import machines
 import numpy as np
 from math import degrees
 import matplotlib.pyplot as plt
 from pprint import pprint
+import scipy as sp
 
 
-class Measurement():
+class Measurement(object):
     def _get_M(self):
         OUT = [np.sqrt(i[1] ** 2 + i[2] ** 2 + i[3] ** 2) for i in self.data]
         return np.array(OUT, dtype=np.ndarray)
@@ -229,7 +230,7 @@ class PInt(Measurement):
 
             # search for index of rawdata with run_nr = run_nr from list
             run_idx = [i for i in range(len(self._raw_data['run'][0])) if
-                       self._raw_data['run'][0][i] in steps_list[:,0]]
+                       self._raw_data['run'][0][i] in steps_list[:, 0]]
 
             # search for index of rawdata with af_treatment = specified
             af_idx = [i for i in range(len(self._raw_data['par1'][0])) if
@@ -240,10 +241,10 @@ class PInt(Measurement):
             # idx contained in both
             idx = sorted(list(set(run_idx) & set(af_idx)))
             if len(self.steplist[step]) != len(idx):
-                runs_idx = [self.steplist[step][idx.index(i),0] for i in idx]
-                runs_difference = list(set(self.steplist[step][:,0]).difference(set(runs_idx)))
+                runs_idx = [self.steplist[step][idx.index(i), 0] for i in idx]
+                runs_difference = list(set(self.steplist[step][:, 0]).difference(set(runs_idx)))
                 # for i in range(len(runs_difference)):
-                    # verbous.WARNING('step << %s %s >> number problem with runs << %s >>' %(self.steplist[], step.upper(), runs_difference[i]) )
+                # verbous.WARNING('step << %s %s >> number problem with runs << %s >>' %(self.steplist[], step.upper(), runs_difference[i]) )
 
             A = list(self._raw_data['run'][0])
             B = list(self.steplist[step][:, 0])
@@ -296,13 +297,132 @@ class PInt(Measurement):
             # implemented[method](quantity, args, kwargs)
 
 
-class PaleoInt(Measurement):
-    '''
-    OLD VERSION
-    '''
+class Hysteresis(Measurement):
+    def __init__(self, treatment, machine, sample):
+        Measurement.__init__(self, file=None, treatment=treatment, machine=machine, sample=sample)
+        self.df = None
+        self.uf = None
+        self.virgin = None
+
+    def import_data(self, files):
+        for i in files:
+            if self.sample.name in i:
+                verbous.IMPORTING('%s ' % i)
+                implemented = {'vsm': machines.vsm(i)}
+                if self.machine in implemented:
+                    self.segments, self._raw_data = implemented[self.machine]
+                    for i in self.segments:
+                        if abs(i[2]) == abs(i[4]):
+                            if i[2] > i[4]:
+                                self.df = np.array(self._raw_data[self.segments.index(i)])
+                                verbous.ADD('DOWNFIELD branch of HYSTERESIS')
+                            else:
+                                self.uf = np.array(self._raw_data[self.segments.index(i)])
+                                verbous.ADD('UPFIELD branch of HYSTERESIS')
+                        else:
+                            self.virgin = np.array(self._raw_data[self.segments.index(i)])
+                            verbous.ADD('VIRGIN branch of HYSTERESIS')
+
+    def normalize(self, value='mass'):
+        verbous.INFO('NORMALIZING data to sample mass')
+        factor = 1
+        if value == 'mass':
+            factor = self.sample.mass
+        if value == 'max':
+            factor = max(self.df[:, 1])
+        try:
+            self.df[:, 1] /= factor
+            self.uf[:, 1] /= factor
+        except:
+            verbous.ERROR('NO DOWN/UPFIELD branches')
+        try:
+            self.virgin[:, 1] /= factor
+        except TypeError:
+            pass
+
+    def plot(self, plot=None, show=False):
+        if not plot:
+            ax = plt.subplot(1, 1, 1)
+            ax.set_xlabel('Field [T]')
+            ax.set_ylabel('moment [Am^2/mg]')
+            ax.plot([0, 0], [-1, 1], '--', color='grey')
+            ax.plot([-1, 1], [0, 0], '--', color='grey')
+            # handles, labels = ax.get_legend_handles_labels()
+        else:
+            ax = plot
+        X = np.concatenate((self.df[:, 0], self.uf[:, 0]), axis=0)
+        Y = np.concatenate((self.df[:, 1], self.uf[:, 1]), axis=0)
+        plot = ax.plot(X, Y, label=self.treatment.get_label('m_time'))
+        ax.set_ylim(-max(self.df[:, 1]) * 1.1, max(self.df[:, 1]) * 1.1)
+        ax.set_xlim(-max(self.df[:, 0]) * 1.1, max(self.df[:, 0]) * 1.1)
+        # if not plot:
+
+        if show:
+            ax.legend(handles, labels)
+            plt.show()
+        else:
+            handles, labels = ax.get_legend_handles_labels()
+            ax.legend(handles, labels, loc='best')
+            return plot
 
 
-    def __get_max(self, step, quantity):
-        data = self._getvalue(step)[quantity]
-        OUT = max([abs(i) for i in data])
-        return OUT
+class Simple_Moment(Measurement):
+    def __init__(self, treatment, machine, sample):
+        # super(Measurement).__init__()
+        super(IRM, self).__init__(self, treatment=treatment, machine=machine, sample=sample)
+        self.type = 'irm'
+
+
+class IRM(Measurement):
+    def __init__(self, treatment, machine, sample):
+        # super(Measurement).__init__()
+        super(IRM, self).__init__(self, treatment=treatment, machine=machine, sample=sample)
+        self.type = 'irm'
+
+    def import_data(self, files):
+        for i in files:
+            if self.sample.name in i:
+                verbous.IMPORTING('%s ' % i)
+                implemented = {'vsm': machines.vsm(i)}
+                if self.machine in implemented:
+                    self.segments, self._raw_data = implemented[self.machine]
+                    self.irm = np.array(self._raw_data[0])
+                    self.bf = np.array([[-i[0], i[1], i[2]] for i in self._raw_data[1]])
+
+                    x_irm = np.linspace(min(self.irm[:, 0]), max(self.irm[:, 0]), 1000)
+                    irm_rem_interpolated = sp.interpolate.pchip_interpolate(self.irm[:, 0], self.irm[:, 1], x_irm)
+                    irm_interpolated = sp.interpolate.pchip_interpolate(self.irm[:, 0], self.irm[:, 2], x_irm)
+
+                    x_bf = np.linspace(min(self.bf[:, 0]), max(self.bf[:, 0]), 1000)
+                    bf_rem_interpolated = sp.interpolate.pchip_interpolate(self.bf[:, 0], self.bf[:, 1], x_bf)
+                    bf_interpolated = sp.interpolate.pchip_interpolate(self.bf[:, 0], self.bf[:, 2], x_bf)
+
+                    # self.bf_int =
+                    # 0 = field, 1 = remanence 2 = induced
+                    # plt.plot(x_irm, irm_rem_interpolated/max(irm_rem_interpolated))
+                    # plt.plot(self.irm[:,0], self.irm[:,1]/max(self.irm[:,1]), '--')
+
+                    test = -(self.bf[:, 1] / max(self.irm[:, 1]) - ( 1 - 2 * self.irm[:, 1] / max(self.irm[:, 1])))
+                    energy = [sum(test[:i]) for i in range(len(test))][-1]
+                    print energy
+
+                    ''' HENKEL PLOT '''
+                    plt.plot(self.irm[:, 1] / max(self.irm[:, 1]), self.bf[:, 1] / max(self.irm[:, 1]))
+                    plt.plot(self.irm[:, 1] / max(self.irm[:, 1]), 1 - 2 * self.irm[:, 1] / max(self.irm[:, 1]), '--',
+                             color='grey')
+                    plt.fill_between(
+                        self.irm[:, 1] / max(self.irm[:, 1]),
+                        self.bf[:, 1] / max(self.irm[:, 1]),
+                        1 - 2 * self.irm[:, 1] / max(self.irm[:, 1]),
+                        # self.irm[:, 1] / max(self.irm[:, 1]),
+                        alpha=0.5,
+                        color='grey'
+                    )
+                    plt.ylim([-1.1, 1.1])
+
+
+                    # plt.plot(x_irm, irm_interpolated)
+                    # plt.plot(x_bf, bf_rem_interpolated/max(irm_rem_interpolated))
+                    # plt.plot(self.bf[:,0], self.bf[:,1]/max(self.bf[:,1]), '--')
+                    # plt.plot(x_bf, bf_interpolated)
+                    plt.show()

@@ -1,5 +1,5 @@
 __author__ = 'Mike'
-import verbous
+from RPv2 import verbous
 import experiments, measurements, infos, data
 
 class Treatment():
@@ -11,11 +11,11 @@ class Treatment():
         verbous.NEW('Treatment')
     def get_label(self, kind='P'):
         implemented = {'P':['P', 'P_max'],
-                       'AF':['AF']}
+                       'AF':['AF'],
+                       'm_time':['milling_time']}
 
         label = ''
         if kind in implemented:
             for i in implemented[kind]:
                 label += i+str(getattr(self, i))+' '
         return label
-

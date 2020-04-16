@@ -2,6 +2,14 @@ import csv
 import numpy as np
 import verbous
 
+def sample_masses(file):
+    header = [str, str, str]
+    reader_object = csv.reader(open(file, 'rU'), delimiter=',')
+    aux = [i for i in reader_object]
+    header = aux[0]
+    data = aux[1:]
+    return header, data
+
 
 def steplist(file):
     header = [int, int, str]
